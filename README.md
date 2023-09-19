@@ -1,1 +1,5 @@
-# sistema-especialista-detector-de-span
+# sistema-especialista-detector-de-span"
+
+# Arthur Medeiros
+# Weslley 
+# wellyngton 
