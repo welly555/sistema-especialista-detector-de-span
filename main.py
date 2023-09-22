@@ -5,11 +5,11 @@ from imap_tools import AND, MailBox
 load_dotenv()
 
 # pegar emails de um remetente para um destinatário
-username = os.getenv("username")
+username = os.getenv("email")
 password = os.getenv("password")
 
-print(username)
-print(password)
+print('Email: ', username)
+print('Senha: ', password)
 
 # lista de imaps: https://www.systoolsgroup.com/imap/
 # meu_email = MailBox('imap.gmail.com').login(username, password)
