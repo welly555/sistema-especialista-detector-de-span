@@ -1,54 +1,118 @@
-import os
-
-from dotenv import load_dotenv
-from imap_tools import AND, MailBox
-
-load_dotenv()
-
-# pegar emails de um remetente para um destinatário
-email = str(os.getenv("email"))
-password = str(os.getenv("password"))
+import email
+import imaplib
+from email.header import decode_header
 
 
-# lista de imaps: https://www.systoolsgroup.com/imap/
-meu_email = MailBox('imap.gmail.com').login(email, password)
-lista_remetentes = ["arthurmedeiros193@gmail.com", "weslley.ferreira@aluno.uepb.edu.br"]
-palavras_chaves = ["100%", "Atenção", "Abra, por favor", "Acesso gratuito", "Apenas hoje",
-                   "Assine agora", "Bilhão", "Bônus", "Cancelamento requerido", "Cartões aceitos",
-                   "Cem por cento grátis", "Crédito pré-aprovado", "De graça", "Dinheiro Extra",
-                   "Dinheiro rápido", "Economize agora", "eliminar a dívida", "Financie já",
-                   "Fórmula milagrosa", "Ganhe $", "Ganhe dinheiro extra", "GRÁTIS", "Hospedagem grátis",
-                   "Instalação gratuita", "Isso não é spam", "Isso não é um golpe", "Isto é um anúncio",
-                   "Leia, por favor", "Ligue para nós", "Lucros", "Macbook grátis", "Melhor negócio",
-                   "Melhor oferta", "Melhor preço", "Melhor promoção", "Menor preço",
-                   "Menores taxas de seguro","Milhões de Dólares", "Milhões de Reais", "Milionário",
-                   "Money", "MoneyBack", "Não é golpe", "Não é spam", "Nós odiamos spam",
-                   "Oferta exclusiva", "Oferta fantástica", "Pague suas dívidas", "Por apenas",
-                   "Presente gratuito", "Receba agora", "Receba de graça", "Receita milagrosa",
-                   "Reembolso total", "Renda Extra", "Rolex", "se surpreenda", "Seja seu próprio patrão",
-                   "Senhas", "SERASA", "Telefone celular gratuito", "tempo limitado", "Tempo limitado",
-                   "Teste grátis", "Trabalhe em Casa", "Trabalhe de casa", "Última chance",
-                   "Uma vez na vida", "Urgentes", "Vagas Limitadas", "Veja por si mesmo",
-                   "Visite nosso site", "Zero chance", "dívida de empréstimo bancário", "clique no link",
-                   "documento cancelado", "prometo revelar", "ganhou no sorteio", "informe seus dados"]
-i = 0
+class Spam:
+    def __init__(self,):
+        # Configurar suas informações de email
+        self.imap_server = 'imap.gmail.com'  # Substitua com o servidor IMAP do seu provedor de email
+        self.email_address = 't1525389@gmail.com'  # Seu endereço de email
+        self.password = 'uhrr sxew jfbv paaw'  # Sua senha
+        self.lista_remetentes = ["arthurmedeiros193@gmail.com", "weslley.ferreira@aluno.uepb.edu.br"]
+        self.emails_suspeitos = ["arthurmedeiros193@gmail.com"]
+        self.palavras_chaves = ["Grátis", "Atenção"]
 
-# criterios: https://github.com/ikvk/imap_tools#search-criteria
-lista_emails = meu_email.fetch(AND(to="t1525389@gmail.com"))
-for email in lista_emails:
-    test = email.text
+        # Conectar-se ao servidor IMAP
+        self.imap = imaplib.IMAP4_SSL(self.imap_server)
+        self.imap.login(self.email_address, self.password)
 
-    if (len(test) <= 2):
-        print('Esse email está vazio e pode ser um spam!')
-    if email.from_ not in lista_remetentes:
-        print("esse email é suspeito")
-    for i in range(len(palavras_chaves)):
-        if palavras_chaves[i] in test:
-            print("Palavras chaves spam no email!")
-    print(email.from_)
-    print(email.subject)
-    print(email.text)
-    print(len(email.subject))
-    print(len(email.text))
-    print(email.uid)
+        # Selecionar a caixa de entrada (inbox)
+        self.imap.select('inbox')
 
+    def iniciar(self,):
+        self.ChecarEmail()
+        self.Logout()
+
+    def ChecarEmail(self,):
+        # Procurar por emails (por exemplo, todos os emails não lidos)
+        result, email_ids = self.imap.search(None, 'UNSEEN')
+
+        if result == 'OK':
+            email_id_list = email_ids[0].split()
+            for self.email_id in email_id_list:
+                result, email_data = self.imap.fetch(self.email_id, '(RFC822)')
+                if result == 'OK':
+                    raw_email = email_data[0][1]
+                    email_message = email.message_from_bytes(raw_email)
+
+                    # Exibir informações do email (remetente, assunto, data)
+                    self.subject, encoding = decode_header(email_message['Subject'])[0]
+                    self.sender, encoding = decode_header(email_message['From'])[0]
+                    self.date = email_message['Date']
+
+                    # print(len(subject))
+
+                    print(f'Remetente: {self.sender}')
+                    print(f'Assunto: {self.subject}')
+                    print(f'Data: {self.date}')
+
+                    self.ExibirEmail(email_message)
+
+                  
+                    print('-' * 40)  # Linha de separação entre os emails
+        else:
+            print('Erro ao pesquisar emails.')
+    
+    def ChecarEmailVazio(self, body):
+        if len(body) <= 2:
+            print("O assunto está vazio!")
+            self.MoverSpam()
+            return True
+        return False
+    
+    def ChecarEmailSuspeito(self,):
+        for i in range(len(self.emails_suspeitos)):
+            if self.emails_suspeitos[i] in self.sender:
+                print("Esse email é suspeito!")
+                self.MoverSpam()
+                return True
+        return False
+    
+    def ChecarPalavrasChaves(self, body):
+        for i in range(len(self.palavras_chaves)):
+            if self.palavras_chaves[i] in body:
+                print("Esse body contem palavras chaves de spam!")
+                self.MoverSpam()
+                return True
+        return False
+
+    def ExibirEmail(self, email_message):
+        if email_message.is_multipart():
+            for part in email_message.walk():
+                content_type = part.get_content_type()
+                content_disposition = str(part.get("Content-Disposition"))
+
+                if "attachment" not in content_disposition:
+                    body = part.get_payload(decode=True)
+                    if body is not None:
+                        body = body.decode()
+                        print(body)
+
+                        if self.ChecarEmailVazio(body):    
+                            pass
+                        elif self.ChecarEmailSuspeito():
+                            pass
+                        elif self.ChecarPalavrasChaves(body):
+                            pass
+        else:
+            body = email_message.get_payload(decode=True)
+            if body is not None:
+                body = body.decode()
+                print(body)
+    
+    def MoverSpam(self,):
+        result, self.data = self.imap.store(self.email_id, '+X-GM-LABELS', '(\Spam)')
+        if result == 'OK':
+            print(f'Email {self.email_id} marcado como spam com sucesso!')
+        else:
+            print(f'Erro ao marcar o email {self.email_id} como spam.')
+    
+    def Logout(self,):
+        self.imap.logout()
+
+
+
+inicar = Spam()
+
+inicar.iniciar()
